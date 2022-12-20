@@ -1,1 +1,1 @@
-bot: python PraiseBot.py
+web: python PraiseBot.py
