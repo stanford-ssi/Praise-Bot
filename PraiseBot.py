@@ -135,4 +135,4 @@ def generateText(message, name):
 #print(generateText("helping me with my homework", "Mr. Smith"))
 
 if __name__ == "__main__":
-    app.run(debug=True, port=3000)
+    app.run(debug=False, port=3000)
