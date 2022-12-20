@@ -96,6 +96,29 @@ def removePraiseBotText(text):
         text = text.replace("Praise Bot", "")
     return text
 
+def postMessage(channel_id, response, points):
+    response = client.chat_postMessage(
+        channel=channel_id,
+        text="Someone sent a Praise!",#response + "\n\nNice! " + name + ", now at " + str(result[0]) + " points",#generateText(text, name),  # Include the command text in the response
+        blocks = [
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": response
+                }
+            },
+            {
+                "type": "context",
+                "elements": [{
+                    "type": "mrkdwn",
+                    "text": points
+                }]
+            }
+        ]
+        
+    )
+
 @slack_event_adapter.on('app_mention')
 def mention(payload):
     Response(), 200
@@ -159,31 +182,8 @@ def mention(payload):
     cnx.close()
 
     try:
-    # Use the WebClient to send a message to the channel
-        response = client.chat_postMessage(
-            channel=channel_id,
-            text="Someone sent a Praise!",#response + "\n\nNice! " + name + ", now at " + str(result[0]) + " points",#generateText(text, name),  # Include the command text in the response
-            blocks = [
-                {
-                    "type": "section",
-                    "text": {
-                        "type": "mrkdwn",
-                        "text": response
-                    }
-                },
-                {
-                    "type": "divider"
-                },
-                {
-                    "type": "section",
-                    "text": {
-                        "type": "mrkdwn",
-                        "text": pointNotificationText
-                    }
-                }
-            ]
-            
-        )
+        postMessage(channel_id, response, pointNotificationText)
+
     except SlackApiError as e:
         # An error occurred
         print(f'Error: {e}')
