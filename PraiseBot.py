@@ -37,13 +37,11 @@ def getNameFromMention(text):
 
 def getPronounsFromUserId(user_id):
     user = client.users_profile_get(user=user_id)
-    print(user)
     pronouns = ""
     try:
         pronouns = user['profile']['fields']['Xf7BUD4MEV']['value'] #Xf7BUD4MEV is the custom field id for pronouns
     except:
         pronouns = ""
-    print("pronouns: " + pronouns)
     return pronouns
 
 def getNameFromUserId(user_id):
@@ -122,9 +120,7 @@ def postMessage(channel_id, response, points):
 @slack_event_adapter.on('app_mention')
 def mention(payload):
     Response(), 200
-    print("tag received")
     event = payload.get('event', {})
-    #print(event)
     channel_id = event.get('channel')
     text = event.get('text')
 
@@ -132,8 +128,6 @@ def mention(payload):
     prompt = removePraiseBotText(prompt)
     usersArray = getUsersFromText(text)
     
-    print(prompt)
-    print(usersArray)
 
     cnx = mysql.connector.connect(
         host="iu51mf0q32fkhfpl.cbetxkdyhwsb.us-east-1.rds.amazonaws.com",
@@ -154,8 +148,6 @@ def mention(payload):
         values = (userId,)
         cursor.execute(query, values)
 
-        print("id" + userId)
-
         cursorFetch = cursor.fetchone()
         points = 1
         if cursorFetch == None: #user is not in database
@@ -173,8 +165,14 @@ def mention(payload):
         cnx.commit()
 
 
-
-        pointNotificationText += user + ", now at " + str(points) + " points\n"
+        if points < 10:
+            pointNotificationText += user + ", now with " + str(points) + " points\n"
+        elif points < 15:
+            pointNotificationText += user + ", with a lot of points\n"
+        elif points < 25:
+            pointNotificationText += user + ", with too many points\n"
+        else:
+            pointNotificationText += user + ", with far too many points\n"
 
     response = generateText(prompt)
 
