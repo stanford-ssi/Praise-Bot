@@ -35,20 +35,47 @@ def getNameFromMention(text):
     else:
         return text
 
+def getPronounsFromUserId(user_id):
+    user = client.users_profile_get(user=user_id)
+    print(user)
+    pronouns = ""
+    try:
+        pronouns = user['profile']['fields']['Xf7BUD4MEV']['value'] #Xf7BUD4MEV is the custom field id for pronouns
+    except:
+        pronouns = ""
+    print("pronouns: " + pronouns)
+    return pronouns
+
+def getNameFromUserId(user_id):
+    print("userID" + user_id)
+    user_id = user_id.replace(">", "").replace("<", "").replace("@", "")
+    user = client.users_info(user=user_id)
+    name = user['user']['real_name']
+    return name
+
 
 #replace tag of any user with user's real name
 def replaceMention(text):
     if "<@" in text:
         mention = text[text.find("<@"):text.find(">")+1]
         name = getNameFromMention(text)
-        text = text.replace(mention, name)
+        pronounStatement = ""
+        if getPronounsFromUserId(mention[2:-1]) != "":
+            pronounStatement = " (who uses " + getPronounsFromUserId(mention[2:-1]) + " pronouns)"
+        text = text.replace(mention, name + pronounStatement)
         return text
     else:
         return text
 
 def convertPromptToText(text):
+    #remove tag of praise bot
+    text = removePraiseBotText(text)
+
+    #add spacing if there's multiple users
     text = text.replace("><@", "> and <@")
     text = text.replace("> <@", "> and <@")
+
+    #replace tags with user's real name
     while("<@" in text):
         text = replaceMention(text)
     return text
@@ -65,15 +92,17 @@ def getUsersFromText(text):
     return users
     
 def removePraiseBotText(text):
-    return text.replace("Praise Bot", "")
+    while "Praise Bot" in text:
+        text = text.replace("Praise Bot", "")
+    return text
 
 @slack_event_adapter.on('app_mention')
 def mention(payload):
     Response(), 200
     print("tag received")
     event = payload.get('event', {})
+    #print(event)
     channel_id = event.get('channel')
-    user_id = event.get('user')
     text = event.get('text')
 
     prompt = convertPromptToText(text)
@@ -108,7 +137,7 @@ def mention(payload):
         points = 1
         if cursorFetch == None: #user is not in database
             addQuery = "INSERT INTO users (id, name, points) VALUES (%s, %s, %s);"
-            values = (userId, getNameFromMention(user), 0)
+            values = (userId, getNameFromUserId(user), 0)
             cursor.execute(addQuery, values)
             cnx.commit()
             print("user added to database")
@@ -182,7 +211,6 @@ def generateText(message):
 
     return completion.choices[0].text
 
-#print(generateText("helping me with my homework", "Mr. Smith"))
 
 if __name__ == "__main__":
     app.run(debug=False, port=3000)
