@@ -1,1 +1,2 @@
-web: python PraiseBot.py
+web: gunicorn PraiseBot:app
+worker: python PraiseBot.py
