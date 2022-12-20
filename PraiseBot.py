@@ -57,6 +57,9 @@ def getUsersFromText(text):
     users = []
     while("<@" in text):
         mention = text[text.find("<@"):text.find(">")+1]
+        if mention == "<@U04FP0Z01QV>":
+            text = text.replace(mention, "")
+            continue
         users.append(mention)
         text = text.replace(mention, "")
     return users
@@ -94,13 +97,26 @@ def mention(payload):
 
     user = users[0].replace("<@", "").replace(">", "")
 
-    query = "SELECT points FROM users WHERE id = 'U02GG2K5XLH';"
-    values = ()
-    cursor.execute(query, values)
-    points = cursor.fetchone()[0] + 1
+    print("user: " + user)
 
-    updateQuery = "UPDATE users SET points = " + str(points) + " WHERE id = 'U02GG2K5XLH';"
-    cursor.execute(updateQuery)
+    query = "SELECT points FROM users WHERE id = %s;"
+    values = (user,)
+    cursor.execute(query, values)
+
+    cursorFetch = cursor.fetchone()
+    points = 1
+    if cursorFetch == None: #user is not in database
+        addQuery = "INSERT INTO users (id, name, points) VALUES (%s, %s, %s);"
+        values = (user, getNameFromMention(users[0]), 0)
+        cursor.execute(addQuery, values)
+        cnx.commit()
+        print("user added to database")
+    else:
+        points = cursorFetch[0] + 1
+
+    updateQuery = "UPDATE users SET points = %s WHERE id = %s;"
+    updateValues = (points, user)
+    cursor.execute(updateQuery, updateValues)
     cnx.commit()
 
     cursor.close()
