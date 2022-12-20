@@ -78,10 +78,10 @@ def mention(payload):
 
     prompt = convertPromptToText(text)
     prompt = removePraiseBotText(prompt)
-    users = getUsersFromText(text)
+    usersArray = getUsersFromText(text)
     
     print(prompt)
-    print(users)
+    print(usersArray)
 
     cnx = mysql.connector.connect(
         host="iu51mf0q32fkhfpl.cbetxkdyhwsb.us-east-1.rds.amazonaws.com",
@@ -93,42 +93,47 @@ def mention(payload):
 
     cursor = cnx.cursor()
 
-    print("users: " + str(users[0]))
+    pointNotificationText = ""
 
-    user = users[0].replace("<@", "").replace(">", "")
+    for user in usersArray:
+        userId = user[2:-1]
 
-    print("user: " + user)
+        query = "SELECT points FROM users WHERE id = %s;"
+        values = (userId,)
+        cursor.execute(query, values)
 
-    query = "SELECT points FROM users WHERE id = %s;"
-    values = (user,)
-    cursor.execute(query, values)
+        print("id" + userId)
 
-    cursorFetch = cursor.fetchone()
-    points = 1
-    if cursorFetch == None: #user is not in database
-        addQuery = "INSERT INTO users (id, name, points) VALUES (%s, %s, %s);"
-        values = (user, getNameFromMention(users[0]), 0)
-        cursor.execute(addQuery, values)
+        cursorFetch = cursor.fetchone()
+        points = 1
+        if cursorFetch == None: #user is not in database
+            addQuery = "INSERT INTO users (id, name, points) VALUES (%s, %s, %s);"
+            values = (userId, getNameFromMention(user), 0)
+            cursor.execute(addQuery, values)
+            cnx.commit()
+            print("user added to database")
+        else:
+            points = cursorFetch[0] + 1
+
+        updateQuery = "UPDATE users SET points = %s WHERE id = %s;"
+        updateValues = (points, userId)
+        cursor.execute(updateQuery, updateValues)
         cnx.commit()
-        print("user added to database")
-    else:
-        points = cursorFetch[0] + 1
 
-    updateQuery = "UPDATE users SET points = %s WHERE id = %s;"
-    updateValues = (points, user)
-    cursor.execute(updateQuery, updateValues)
-    cnx.commit()
+
+
+        pointNotificationText += user + ", now at " + str(points) + " points\n"
+
+    response = generateText(prompt)
 
     cursor.close()
     cnx.close()
-
-    response = generateText(prompt)
 
     try:
     # Use the WebClient to send a message to the channel
         response = client.chat_postMessage(
             channel=channel_id,
-            text="praise",#response + "\n\nNice! " + name + ", now at " + str(result[0]) + " points",#generateText(text, name),  # Include the command text in the response
+            text="Someone sent a Praise!",#response + "\n\nNice! " + name + ", now at " + str(result[0]) + " points",#generateText(text, name),  # Include the command text in the response
             blocks = [
                 {
                     "type": "section",
@@ -144,7 +149,7 @@ def mention(payload):
                     "type": "section",
                     "text": {
                         "type": "mrkdwn",
-                        "text": users[0] + ", now at " + str(points) + " points"
+                        "text": pointNotificationText
                     }
                 }
             ]
