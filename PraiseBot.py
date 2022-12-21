@@ -157,9 +157,7 @@ def some_processing(usersArray, prompt, channel_id):
 
     pointNotificationText = ""
 
-    for user in usersArray:
-        userId = getUserFromText(user)
-
+    for userId in usersArray:
         query = "SELECT points FROM users WHERE id = %s;"
         values = (userId,)
         cursor.execute(query, values)
@@ -168,7 +166,7 @@ def some_processing(usersArray, prompt, channel_id):
         points = 1
         if cursorFetch == None: #user is not in database
             addQuery = "INSERT INTO users (id, name, points) VALUES (%s, %s, %s);"
-            values = (userId, getNameFromUserId(user), 0)
+            values = (userId, getNameFromUserId(userId), 0)
             cursor.execute(addQuery, values)
             cnx.commit()
             print("user added to database")
@@ -182,13 +180,13 @@ def some_processing(usersArray, prompt, channel_id):
 
 
         if points < 10:
-            pointNotificationText += "<@"+user + ">, now with " + str(points) + " points\n"
+            pointNotificationText += "<@"+userId + ">, now with " + str(points) + " points\n"
         elif points < 15:
-            pointNotificationText += "<@"+user + ">, with a lot of points\n"
+            pointNotificationText += "<@"+userId + ">, with a lot of points\n"
         elif points < 25:
-            pointNotificationText += "<@"+user + ">, with too many points\n"
+            pointNotificationText += "<@"+userId + ">, with too many points\n"
         else:
-            pointNotificationText += "<@"+user + ">, with far too many points\n"
+            pointNotificationText += "<@"+userId + ">, with far too many points\n"
 
     response = generateText(prompt)
 
