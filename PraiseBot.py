@@ -5,7 +5,7 @@ import slack
 import mysql.connector
 import requests
 import threading
-from time import sleep
+from gevent.pywsgi import WSGIServer
 from pathlib import Path
 from dotenv import load_dotenv
 from slackeventsapi import SlackEventAdapter
@@ -30,7 +30,7 @@ BOT_ID = client.api_call("auth.test")["user_id"]
 # Get the user's real name from their user id
 def getNameFromMention(text):
     if "<@" in text:
-        mention = text[text.find("<@"):text.find(">")+1]
+        mention = text[text.find("<@"):text.find("|")+1]
         user_id = mention[2:-1]
         user = client.users_info(user=user_id)
         name = user['user']['real_name']
@@ -49,7 +49,6 @@ def getPronounsFromUserId(user_id):
 
 def getNameFromUserId(user_id):
     print("userID" + user_id)
-    user_id = user_id.replace(">", "").replace("<", "").replace("@", "")
     user = client.users_info(user=user_id)
     name = user['user']['real_name']
     return name
@@ -58,19 +57,20 @@ def getNameFromUserId(user_id):
 #replace tag of any user with user's real name
 def replaceMention(text):
     if "<@" in text:
-        mention = text[text.find("<@"):text.find(">")+1]
+        mention = text[text.find("<@"):text.find("|")+1]
+        removal = text[text.find("<@"):text.find(">")+1]
         name = getNameFromMention(text)
         pronounStatement = ""
         if getPronounsFromUserId(mention[2:-1]) != "":
             pronounStatement = " (who uses " + getPronounsFromUserId(mention[2:-1]) + " pronouns)"
-        text = text.replace(mention, name + pronounStatement)
+        text = text.replace(removal, name + pronounStatement)
         return text
     else:
         return text
 
 def convertPromptToText(text):
     #remove tag of praise bot
-    text = removePraiseBotText(text)
+    #text = removePraiseBotText(text)
 
     #add spacing if there's multiple users
     text = text.replace("><@", "> and <@")
@@ -84,18 +84,21 @@ def convertPromptToText(text):
 def getUsersFromText(text):
     users = []
     while("<@" in text):
-        mention = text[text.find("<@"):text.find(">")+1]
-        if mention == "<@U04FP0Z01QV>":
-            text = text.replace(mention, "")
-            continue
+        startIndex = text.find("<@")
+        endIndex = text.find("|")
+        mention = text[startIndex+2:endIndex]
         users.append(mention)
-        text = text.replace(mention, "")
+        text = text.replace(text[startIndex:endIndex+1], "")
     return users
+
+def getUserFromText(text):
+    mention = text[text.find("<@"):text.find("|")+1]
+    return mention
     
-def removePraiseBotText(text):
-    while "Praise Bot" in text:
-        text = text.replace("Praise Bot", "")
-    return text
+# def removePraiseBotText(text):
+#     while "Praise Bot" in text:
+#         text = text.replace("Praise Bot", "")
+#     return text
 
 def postMessage(channel_id, response, points):
     response = client.chat_postMessage(
@@ -122,6 +125,8 @@ def postMessage(channel_id, response, points):
 
 @app.route('/praise', methods=['POST'])
 def praise():
+    print("Praise Request Received")
+
     slack_request = request.form
     text = slack_request.get('text')
     channel_id = slack_request.get('channel_id')
@@ -129,6 +134,17 @@ def praise():
     prompt = convertPromptToText(text) #might need to remove Praise Bot text
     usersArray = getUsersFromText(text)
 
+
+    x = threading.Thread(
+        target=some_processing,
+        args=(usersArray, prompt, channel_id,)
+    )
+    x.start()
+
+    return {"response_type": "in_channel"}
+
+
+def some_processing(usersArray, prompt, channel_id):
     cnx = mysql.connector.connect(
         host="iu51mf0q32fkhfpl.cbetxkdyhwsb.us-east-1.rds.amazonaws.com",
         user="e0ajs9c6m0vqvgq3",
@@ -142,7 +158,7 @@ def praise():
     pointNotificationText = ""
 
     for user in usersArray:
-        userId = user[2:-1]
+        userId = getUserFromText(user)
 
         query = "SELECT points FROM users WHERE id = %s;"
         values = (userId,)
@@ -166,13 +182,13 @@ def praise():
 
 
         if points < 10:
-            pointNotificationText += user + ", now with " + str(points) + " points\n"
+            pointNotificationText += "<@"+user + ">, now with " + str(points) + " points\n"
         elif points < 15:
-            pointNotificationText += user + ", with a lot of points\n"
+            pointNotificationText += "<@"+user + ">, with a lot of points\n"
         elif points < 25:
-            pointNotificationText += user + ", with too many points\n"
+            pointNotificationText += "<@"+user + ">, with too many points\n"
         else:
-            pointNotificationText += user + ", with far too many points\n"
+            pointNotificationText += "<@"+user + ">, with far too many points\n"
 
     response = generateText(prompt)
 
@@ -196,76 +212,76 @@ def praise():
     }
     return message
 
-@slack_event_adapter.on('app_mention')
-def mention(payload):
-    Response(), 200
-    event = payload.get('event', {})
-    channel_id = event.get('channel')
-    text = event.get('text')
+# @slack_event_adapter.on('app_mention')
+# def mention(payload):
+#     Response(), 200
+#     event = payload.get('event', {})
+#     channel_id = event.get('channel')
+#     text = event.get('text')
 
-    prompt = convertPromptToText(text)
-    prompt = removePraiseBotText(prompt)
-    usersArray = getUsersFromText(text)
+#     prompt = convertPromptToText(text)
+#     prompt = removePraiseBotText(prompt)
+#     usersArray = getUsersFromText(text)
     
 
-    cnx = mysql.connector.connect(
-        host="iu51mf0q32fkhfpl.cbetxkdyhwsb.us-east-1.rds.amazonaws.com",
-        user="e0ajs9c6m0vqvgq3",
-        password="hprwbgjs2xsf9f2s",
-        database="azdlxzpzmqhqjfyh"
-    )
+#     cnx = mysql.connector.connect(
+#         host="iu51mf0q32fkhfpl.cbetxkdyhwsb.us-east-1.rds.amazonaws.com",
+#         user="e0ajs9c6m0vqvgq3",
+#         password="hprwbgjs2xsf9f2s",
+#         database="azdlxzpzmqhqjfyh"
+#     )
 
 
-    cursor = cnx.cursor()
+#     cursor = cnx.cursor()
 
-    pointNotificationText = ""
+#     pointNotificationText = ""
 
-    for user in usersArray:
-        userId = user[2:-1]
+#     for user in usersArray:
+#         userId = user[2:-1]
 
-        query = "SELECT points FROM users WHERE id = %s;"
-        values = (userId,)
-        cursor.execute(query, values)
+#         query = "SELECT points FROM users WHERE id = %s;"
+#         values = (userId,)
+#         cursor.execute(query, values)
 
-        cursorFetch = cursor.fetchone()
-        points = 1
-        if cursorFetch == None: #user is not in database
-            addQuery = "INSERT INTO users (id, name, points) VALUES (%s, %s, %s);"
-            values = (userId, getNameFromUserId(user), 0)
-            cursor.execute(addQuery, values)
-            cnx.commit()
-            print("user added to database")
-        else:
-            points = cursorFetch[0] + 1
+#         cursorFetch = cursor.fetchone()
+#         points = 1
+#         if cursorFetch == None: #user is not in database
+#             addQuery = "INSERT INTO users (id, name, points) VALUES (%s, %s, %s);"
+#             values = (userId, getNameFromUserId(user), 0)
+#             cursor.execute(addQuery, values)
+#             cnx.commit()
+#             print("user added to database")
+#         else:
+#             points = cursorFetch[0] + 1
 
-        updateQuery = "UPDATE users SET points = %s WHERE id = %s;"
-        updateValues = (points, userId)
-        cursor.execute(updateQuery, updateValues)
-        cnx.commit()
+#         updateQuery = "UPDATE users SET points = %s WHERE id = %s;"
+#         updateValues = (points, userId)
+#         cursor.execute(updateQuery, updateValues)
+#         cnx.commit()
 
 
-        if points < 10:
-            pointNotificationText += user + ", now with " + str(points) + " points\n"
-        elif points < 15:
-            pointNotificationText += user + ", with a lot of points\n"
-        elif points < 25:
-            pointNotificationText += user + ", with too many points\n"
-        else:
-            pointNotificationText += user + ", with far too many points\n"
+#         if points < 10:
+#             pointNotificationText += user + ", now with " + str(points) + " points\n"
+#         elif points < 15:
+#             pointNotificationText += user + ", with a lot of points\n"
+#         elif points < 25:
+#             pointNotificationText += user + ", with too many points\n"
+#         else:
+#             pointNotificationText += user + ", with far too many points\n"
 
-    response = generateText(prompt)
+#     response = generateText(prompt)
 
-    cursor.close()
-    cnx.close()
+#     cursor.close()
+#     cnx.close()
 
-    try:
-        postMessage(channel_id, response, pointNotificationText)
+#     try:
+#         postMessage(channel_id, response, pointNotificationText)
 
-    except SlackApiError as e:
-        # An error occurred
-        print(f'Error: {e}')
-        return e, 500
-    return Response(), 200
+#     except SlackApiError as e:
+#         # An error occurred
+#         print(f'Error: {e}')
+#         return e, 500
+#     return Response(), 200
 
 
 def generateText(message):
@@ -290,4 +306,6 @@ def generateText(message):
 
 
 if __name__ == "__main__":
-    app.run(debug=False, port=3000)
+    #app.run(debug=False, port=3000)
+    http_server = WSGIServer(('', 3000), app)
+    http_server.serve_forever()
