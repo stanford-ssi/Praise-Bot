@@ -3,6 +3,9 @@ import openai
 import random
 import slack
 import mysql.connector
+import requests
+import threading
+from time import sleep
 from pathlib import Path
 from dotenv import load_dotenv
 from slackeventsapi import SlackEventAdapter
@@ -116,6 +119,82 @@ def postMessage(channel_id, response, points):
         ]
         
     )
+
+@app.route('/praise', methods=['POST'])
+def praise():
+    slack_request = request.form
+    text = slack_request.get('text')
+    channel_id = slack_request.get('channel_id')
+
+    prompt = convertPromptToText(text) #might need to remove Praise Bot text
+    usersArray = getUsersFromText(text)
+
+    cnx = mysql.connector.connect(
+        host="iu51mf0q32fkhfpl.cbetxkdyhwsb.us-east-1.rds.amazonaws.com",
+        user="e0ajs9c6m0vqvgq3",
+        password="hprwbgjs2xsf9f2s",
+        database="azdlxzpzmqhqjfyh"
+    )
+
+
+    cursor = cnx.cursor()
+
+    pointNotificationText = ""
+
+    for user in usersArray:
+        userId = user[2:-1]
+
+        query = "SELECT points FROM users WHERE id = %s;"
+        values = (userId,)
+        cursor.execute(query, values)
+
+        cursorFetch = cursor.fetchone()
+        points = 1
+        if cursorFetch == None: #user is not in database
+            addQuery = "INSERT INTO users (id, name, points) VALUES (%s, %s, %s);"
+            values = (userId, getNameFromUserId(user), 0)
+            cursor.execute(addQuery, values)
+            cnx.commit()
+            print("user added to database")
+        else:
+            points = cursorFetch[0] + 1
+
+        updateQuery = "UPDATE users SET points = %s WHERE id = %s;"
+        updateValues = (points, userId)
+        cursor.execute(updateQuery, updateValues)
+        cnx.commit()
+
+
+        if points < 10:
+            pointNotificationText += user + ", now with " + str(points) + " points\n"
+        elif points < 15:
+            pointNotificationText += user + ", with a lot of points\n"
+        elif points < 25:
+            pointNotificationText += user + ", with too many points\n"
+        else:
+            pointNotificationText += user + ", with far too many points\n"
+
+    response = generateText(prompt)
+
+    print("response: " + response)
+
+    cursor.close()
+    cnx.close()
+
+    try:
+        postMessage(channel_id, response, pointNotificationText)
+
+    except SlackApiError as e:
+        # An error occurred
+        print(f'Error: {e}')
+        return e, 500
+
+    message = {        
+        "text": "testing",
+        "response_type": "in_channel"
+        
+    }
+    return message
 
 @slack_event_adapter.on('app_mention')
 def mention(payload):
