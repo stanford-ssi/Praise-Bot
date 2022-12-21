@@ -147,9 +147,9 @@ def praise():
 def some_processing(usersArray, prompt, channel_id):
     cnx = mysql.connector.connect(
         host="iu51mf0q32fkhfpl.cbetxkdyhwsb.us-east-1.rds.amazonaws.com",
-        user="e0ajs9c6m0vqvgq3",
-        password="hprwbgjs2xsf9f2s",
-        database="azdlxzpzmqhqjfyh"
+        user="cai8y5x0xjynak2l",
+        password="i0dfs88droctswi9",
+        database="ieprvjg4l5pgjzdd"
     )
 
 
