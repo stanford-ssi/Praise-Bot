@@ -146,10 +146,10 @@ def praise():
 
 def some_processing(usersArray, prompt, channel_id):
     cnx = mysql.connector.connect(
-        host="iu51mf0q32fkhfpl.cbetxkdyhwsb.us-east-1.rds.amazonaws.com",
-        user="cai8y5x0xjynak2l",
-        password="i0dfs88droctswi9",
-        database="ieprvjg4l5pgjzdd"
+        host=os.environ['DB_HOST'],
+        user=os.environ['DB_USER'],
+        password=os.environ['DB_PASS'],
+        database=os.environ['DB_DATABASE']
     )
 
 
