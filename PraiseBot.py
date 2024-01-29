@@ -293,7 +293,20 @@ def generateText(message):
 
     print("prompt: " + prompt)
 
-    completion = openai.ChatCompletion.create(
+    # completion = openai.ChatCompletion.create(
+    #     model="gpt-3.5-turbo",
+    #     messages=[
+    #         {"role": "system", "content": "You are a slack bot which praises people for their contributions to the Stanford Student Space Initiative (SSI)."},
+    #         {"role": "user", "content": prompt}
+    #     ]
+    # )
+
+    client = openai(
+        # This is the default and can be omitted
+        api_key=os.environ['OPENAI_API_KEY']
+    )
+
+    completion = client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[
             {"role": "system", "content": "You are a slack bot which praises people for their contributions to the Stanford Student Space Initiative (SSI)."},
@@ -301,7 +314,9 @@ def generateText(message):
         ]
     )
 
-    return completion.choices[0].text
+    print(completion)
+
+    return completion.choices[0].message['content'].strip()
 
 
 if __name__ == "__main__":
