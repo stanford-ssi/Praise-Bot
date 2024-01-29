@@ -1,5 +1,5 @@
 import os
-import openai
+from openai import OpenAI
 import random
 import slack
 import mysql.connector
@@ -301,7 +301,7 @@ def generateText(message):
     #     ]
     # )
 
-    client = openai(
+    client = OpenAI(
         # This is the default and can be omitted
         api_key=os.environ['OPENAI_API_KEY']
     )
