@@ -289,7 +289,7 @@ def generateText(message):
 
     prompt_choice = random.choice(response_options)
 
-    prompt = "write " + prompt_choice + " to " + message ". If you're unsure what you're thanking them for, choose something generic about contributing to the Stanford Student Space Initiative (SSI). Do not add any fields that I need to fill in (such as [Your name])."
+    prompt = "write " + prompt_choice + " to " + message + ". If you're unsure what you're thanking them for, choose something generic about contributing to the Stanford Student Space Initiative (SSI). Do not add any fields that I need to fill in (such as [Your name])."
 
     print("prompt: " + prompt)
 
