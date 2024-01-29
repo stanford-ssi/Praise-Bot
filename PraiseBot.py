@@ -285,16 +285,16 @@ def some_processing(usersArray, prompt, channel_id):
 def generateText(message):
         
     ## options
-    response_options = ["a short humorous thank you", "a short serious thank you", "a poem", "a haiku", "a rap", "a space themed thank you", "a thank you with a space pun"]
+    response_options = ["a short humorous thank you", "a short serious thank you", "a thank you poem", "a thank you haiku", "a thank you rap", "a space themed thank you", "a thank you with a space pun", "a short, bold thank you", "an informal thank you"]
 
     prompt_choice = random.choice(response_options)
 
-    prompt = "write " + prompt_choice + " to " + message
+    prompt = "write " + prompt_choice + " to " + message ". If you're unsure what your thanking them for, choose something generic about contributing to the Stanford Student Space Initiative. Do not add any fields that I need to fill in (such as [Your name])."
 
     print("prompt: " + prompt)
 
     completion = openai.Completion.create(
-        engine="text-davinci-002",
+        engine="gpt-3.5-turbo-1106",
         prompt=prompt,
         max_tokens=1024,
         temperature=0.7,
