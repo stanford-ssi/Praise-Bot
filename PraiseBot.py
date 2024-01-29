@@ -293,11 +293,12 @@ def generateText(message):
 
     print("prompt: " + prompt)
 
-    completion = openai.Completion.create(
-        engine="gpt-3.5-turbo-1106",
-        prompt=prompt,
-        max_tokens=1024,
-        temperature=0.7,
+    completion = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "You are a slack bot which praises people for their contributions to the Stanford Student Space Initiative (SSI)."},
+            {"role": "user", "content": prompt}
+        ]
     )
 
     return completion.choices[0].text
