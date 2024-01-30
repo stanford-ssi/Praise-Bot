@@ -1,5 +1,5 @@
 import os
-from openai import OpenAI
+import openai
 import random
 import slack
 import mysql.connector
@@ -293,23 +293,10 @@ def generateText(message):
 
     print("prompt: " + prompt)
 
-    # completion = openai.ChatCompletion.create(
-    #     model="gpt-3.5-turbo",
-    #     messages=[
-    #         {"role": "system", "content": "You are a slack bot which praises people for their contributions to the Stanford Student Space Initiative (SSI)."},
-    #         {"role": "user", "content": prompt}
-    #     ]
-    # )
-
-    client = OpenAI(
-        # This is the default and can be omitted
-        api_key=os.environ['OPENAI_API_KEY']
-    )
-
-    completion = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+    completion = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo-1106",
         messages=[
-            {"role": "system", "content": "You are a slack bot which praises people for their contributions to the Stanford Student Space Initiative (SSI)."},
+            {"role": "system", "content": "You are a Slack bot known as Praise Bot that writes a message thanking someone when they do a helpful thing for the Stanford Student Space Initiative (SSI), a student organization at Stanford for aerospace engineering and space exploration enthusiasts."},
             {"role": "user", "content": prompt}
         ]
     )
