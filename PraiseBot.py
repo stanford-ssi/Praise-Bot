@@ -1,5 +1,5 @@
 import os
-import openai
+from openai import OpenAI
 import random
 import slack
 import mysql.connector
@@ -17,8 +17,10 @@ from slack_sdk.errors import SlackApiError
 env_path = Path('.') / '.env'
 load_dotenv(dotenv_path=env_path)
 
-openai.api_key = os.environ['OPENAI_API_KEY']
-openai.Model.list()
+openai_client = OpenAI(
+    # This is the default and can be omitted
+    api_key=os.environ['OPENAI_API_KEY']
+)
 
 app = Flask(__name__)
 slack_event_adapter = SlackEventAdapter("351874bda052ab5615fe8cc0f8769cdd", "/slack/events", app)
@@ -293,17 +295,17 @@ def generateText(message):
 
     print("prompt: " + prompt)
 
-    completion = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo-1106",
+    completion = openai_client.chat.completions.create(
         messages=[
-            {"role": "system", "content": "You are a Slack bot known as Praise Bot that writes a message thanking someone when they do a helpful thing for the Stanford Student Space Initiative (SSI), a student organization at Stanford for aerospace engineering and space exploration enthusiasts."},
+            {"role": "system", "content": "You are a Slack bot that generates a message thanking someone when they do a helpful thing for the Stanford Student Space Initiative (SSI), a student organization at Stanford for aerospace engineering and space exploration enthusiasts."},
             {"role": "user", "content": prompt}
-        ]
+        ],
+        model="gpt-3.5-turbo",
     )
 
     print(completion)
 
-    return completion.choices[0].message['content'].strip()
+    return completion.choices[0].message.content
 
 
 if __name__ == "__main__":
