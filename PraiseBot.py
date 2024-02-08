@@ -148,20 +148,24 @@ def praise():
 
 @app.route('/admonish', methods=['POST'])
 def admonish():
+    def respond_async(channel_id, text):
+        # Simulate delay
+        time.sleep(1)
+        
+        response = client.chat_postMessage(
+            channel=channel_id,
+            text="Sorry, as a large language model trained by OpenAI, I am unable to generate content that would admonish SSI's wonderful members.",
+        )
+
     print("Praise Request Received")
 
     slack_request = request.form
     text = slack_request.get('text')
     channel_id = slack_request.get('channel_id')
 
-    time.sleep(1)
-
-
-    response = client.chat_postMessage(
-        channel=channel_id,
-        text="Sorry, as a large language model trained by OpenAI, I am unable to generate content that would admonish SSI's wonderful members.",#response + "\n\nNice! " + name + ", now at " + str(result[0]) + " points",#generateText(text, name),  # Include the command text in the response
-        
-    )
+    # Start asynchronous response using threading
+    thread = threading.Thread(target=respond_async, args=(channel_id, text))
+    thread.start()
 
     return {"response_type": "in_channel"}
 
