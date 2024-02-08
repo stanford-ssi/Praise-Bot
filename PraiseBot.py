@@ -146,7 +146,7 @@ def praise():
     return {"response_type": "in_channel"}
 
 @app.route('/admonish', methods=['POST'])
-def praise():
+def admonish():
     print("Praise Request Received")
 
     slack_request = request.form
