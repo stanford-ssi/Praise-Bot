@@ -12,6 +12,7 @@ from slackeventsapi import SlackEventAdapter
 from flask import Flask, request, Response
 from slack_sdk.webhook import WebhookClient
 from slack_sdk.errors import SlackApiError
+import time
 
 
 env_path = Path('.') / '.env'
@@ -152,6 +153,9 @@ def admonish():
     slack_request = request.form
     text = slack_request.get('text')
     channel_id = slack_request.get('channel_id')
+
+    time.sleep(1)
+
 
     response = client.chat_postMessage(
         channel=channel_id,
