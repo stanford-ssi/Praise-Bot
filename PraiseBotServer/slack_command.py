@@ -18,13 +18,15 @@ def setup_slack_commands(flask_app, slack_app, handler):
         return praise(ack, body, respond, slack_app.client)
 
 def praise(ack, body, respond, client):
-    ack()
+    command_text = body['text']
+    channel_id = body['channel_id']
+
+    ack({
+        "response_type": "in_channel",
+    })
 
     print("Praise Request Received")
     print(body)
-
-    command_text = body['text']
-    channel_id = body['channel_id']
 
     prompt = get_prompt_from_command(command_text, client) 
     usersArray = get_users_from_command(command_text)
@@ -37,8 +39,12 @@ def praise(ack, body, respond, client):
         args=(usersArray, prompt, channel_id, client)
     )
     x.start()
+    
 
-    return {"response_type": "in_channel"}
+    return {
+        "response_type": "in_channel",
+        "text": f"*You said:* `{command_text}`\nGenerating praise... hang tight! 🚀"
+    }
 
 def some_processing(usersArray, prompt, channel_id, client):
     
