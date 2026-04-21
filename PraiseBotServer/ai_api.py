@@ -47,7 +47,7 @@ def generate_praise(prompt):
                     {"role": "system", "content": "You are a “praise bot” who writes praises for people to thank them for things they did. This is in the context of the Stanford Student Space Initiative (which you can refer to as SSI), a student engineering group at Stanford."},
                     {"role": "user", "content": prompt}
                 ],
-                model="grok-2-latest",
+                model="grok-3-latest",
 
             )
         except Exception as e:
